@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>My Web Page</title>
+</head>
+<script>
+    const openRequest = indexedDB.open('myDatabase', 1);
+    openRequest.onupgradeneeded = function (e) {
+        let db = openRequest.result;
+        console.log('running onupgradeneeded');
+        if (!db.objectStoreNames.contains('myDatabaseStore')) {
+            const storeOS = db.createObjectStore('myDatabaseStore', { keyPath: "name" });
+        }
+    };
+    openRequest.onsuccess = function (e) {
+        console.log('running onsuccess');
+        let db = openRequest.result;
+        addItem(db);
+    };
+    openRequest.onerror = function (e) {
+        console.log('onerror! doesnt work');
+        console.dir(e);
+    };
+    function addItem(db) {
+        const item = {
+            name: 'banana',
+            price: '$2.99',
+            description: 'It is a purple banana!',
+            created: new Date().getTime(),
+        };
+        const tx = db.transaction("myDatabaseStore", "readwrite");
+        const store = tx.objectStore('myDatabaseStore');
+        let request = store.add(item);
+        request.onsuccess = function () { // (4)
+            console.log("item added to the store", request.result);
+            store.getAll().onsuccess = function (event) {
+                console.log('data in the store:', event.target.result);  // prints of items in the store using key: value pair
+                store.put({ name: 'banana', price: '$3.99', description: 'It is a purple banana!', created: new Date().getTime() }).
+                    // updates the price of the banana, it will update the price of the banana to $3.99 based on the key value(banana)
+                    onsuccess = function (event) {
+                        console.log('item updated', event.target.result);
+                        store.getAll().onsuccess = function (event) {
+                            console.log('new data in the store:', event.target.result);
+                            store.delete('banana').onsuccess = function (event) {
+                                console.log('item deleted', event.target.result);
+                                store.getAll().onsuccess = function (event) {
+                                    console.log('new data in the store:', event.target.result);
+                                };
+                            };
+
+                        };
+                    };
+            }
+        }
+        request.onerror = function () {
+            console.log("Error", request.error);
+        };
+    }
+</script>
+
+</html>
